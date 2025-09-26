@@ -1,3 +1,4 @@
+using CrashGameLoadTest.HttpClient;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace CrashGameLoadTest.Models
@@ -5,7 +6,7 @@ namespace CrashGameLoadTest.Models
     public class PlayerContext
     {
         public string PlayerId { get; set; } = string.Empty;
-        public HttpClient HttpClient { get; set; } = new();
+        public IntegratorHttpClient HttpClient { get; set; }
         public HubConnection? SignalRConnection { get; set; }
         public string JwtToken { get; set; } = string.Empty;
         public decimal Balance { get; set; }

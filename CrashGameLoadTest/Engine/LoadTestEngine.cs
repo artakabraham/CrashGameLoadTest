@@ -7,12 +7,12 @@ namespace CrashGameLoadTest.Engine
     public class LoadTestEngine
     {
         private readonly ScenarioBuilder _scenarioBuilder;
-        
+
         public LoadTestEngine(ScenarioBuilder scenarioBuilder)
         {
             _scenarioBuilder = scenarioBuilder;
         }
-        
+
         public async Task RunAsync(int playerCount, string scenarioType, CancellationToken token)
         {
             var scenario = scenarioType.ToLower() switch
@@ -25,7 +25,7 @@ namespace CrashGameLoadTest.Engine
             var players = new List<Player>();
             var tasks = new List<Task>();
 
-            for (int i = 0; i < playerCount; i++)
+            for (var i = 0; i < playerCount; i++)
             {
                 var context = new PlayerContext { PlayerId = $"Player_{i}" };
                 var player = new Player(scenario, context, token);
@@ -34,9 +34,9 @@ namespace CrashGameLoadTest.Engine
             }
 
             Console.WriteLine($"Started {playerCount} players with {scenario.Name} scenario");
-            
+
             await Task.WhenAll(tasks);
-            
+
             Console.WriteLine("All players completed");
         }
     }

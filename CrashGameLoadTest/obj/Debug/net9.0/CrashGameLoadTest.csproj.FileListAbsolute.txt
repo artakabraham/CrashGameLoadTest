@@ -53,3 +53,4 @@ C:\Users\Artak\RiderProjects\CrashGameLoadTest\CrashGameLoadTest\bin\Debug\net9.
 C:\Users\Artak\RiderProjects\CrashGameLoadTest\CrashGameLoadTest\bin\Debug\net9.0\Microsoft.AspNetCore.SignalR.Protocols.Json.dll
 C:\Users\Artak\RiderProjects\CrashGameLoadTest\CrashGameLoadTest\bin\Debug\net9.0\Microsoft.Extensions.Features.dll
 C:\Users\Artak\RiderProjects\CrashGameLoadTest\CrashGameLoadTest\bin\Debug\net9.0\System.Net.ServerSentEvents.dll
+C:\Users\Artak\RiderProjects\CrashGameLoadTest\CrashGameLoadTest\obj\Debug\net9.0\CrashGameLoadTest.sourcelink.json

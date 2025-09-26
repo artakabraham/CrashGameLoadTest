@@ -42,7 +42,7 @@ namespace CrashGameLoadTest.Game
             }
             finally
             {
-                await CleanupAsync();
+                //await CleanupAsync();
             }
         }
 
@@ -94,13 +94,13 @@ namespace CrashGameLoadTest.Game
             }
         }
 
-        private async Task CleanupAsync()
-        {
-            if (_context.SignalRConnection != null)
-            {
-                await _context.SignalRConnection.DisposeAsync();
-            }
-            _context.HttpClient?.Dispose();
-        }
+        // private async Task CleanupAsync()
+        // {
+        //     if (_context.SignalRConnection != null)
+        //     {
+        //         await _context.SignalRConnection.DisposeAsync();
+        //     }
+        //     _context.HttpClient?.Dispose();
+        // }
     }
 }

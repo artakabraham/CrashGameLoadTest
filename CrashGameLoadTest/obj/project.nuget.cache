@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "dgSpecHash": "Q+53lAQKk7E=",
-  "success": false,
+  "dgSpecHash": "aF9+FQcuNQ4=",
+  "success": true,
   "projectFilePath": "C:\\Users\\Artak\\RiderProjects\\CrashGameLoadTest\\CrashGameLoadTest\\CrashGameLoadTest.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Artak\\.nuget\\packages\\lvc.httpclientmanager\\1.0.17\\lvc.httpclientmanager.1.0.17.nupkg.sha512",
@@ -18,7 +18,7 @@
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.configuration.commandline\\9.0.0\\microsoft.extensions.configuration.commandline.9.0.0.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.configuration.fileextensions\\9.0.0\\microsoft.extensions.configuration.fileextensions.9.0.0.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.configuration.json\\9.0.0\\microsoft.extensions.configuration.json.9.0.0.nupkg.sha512",
-    "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.0\\microsoft.extensions.dependencyinjection.9.0.0.nupkg.sha512",
+    "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.9\\microsoft.extensions.dependencyinjection.9.0.9.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.9\\microsoft.extensions.dependencyinjection.abstractions.9.0.9.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.dependencymodel\\9.0.0\\microsoft.extensions.dependencymodel.9.0.0.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\microsoft.extensions.diagnostics\\9.0.2\\microsoft.extensions.diagnostics.9.0.2.nupkg.sha512",
@@ -50,15 +50,5 @@
     "C:\\Users\\Artak\\.nuget\\packages\\system.net.serversentevents\\9.0.9\\system.net.serversentevents.9.0.9.nupkg.sha512",
     "C:\\Users\\Artak\\.nuget\\packages\\system.threading.channels\\9.0.9\\system.threading.channels.9.0.9.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1605",
-      "level": "Error",
-      "message": "Warning As Error: Detected package downgrade: Microsoft.Extensions.DependencyInjection from 9.0.9 to 9.0.0. Reference the package directly from the project to select a different version. \r\n CrashGameLoadTest -> Microsoft.AspNetCore.SignalR.Client 9.0.9 -> Microsoft.AspNetCore.SignalR.Client.Core 9.0.9 -> Microsoft.Extensions.DependencyInjection (>= 9.0.9) \r\n CrashGameLoadTest -> Microsoft.Extensions.DependencyInjection (>= 9.0.0)",
-      "libraryId": "Microsoft.Extensions.DependencyInjection",
-      "targetGraphs": [
-        "net9.0"
-      ]
-    }
-  ]
+  "logs": []
 }
