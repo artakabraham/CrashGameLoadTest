@@ -1,4 +1,5 @@
 ﻿using CrashGameLoadTest.Engine;
+using CrashGameLoadTest.Extensions;
 using CrashGameLoadTest.Scenarios;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ try
 
     var services = new ServiceCollection();
     services.AddSingleton<IConfiguration>(configuration);
+    services.RegisterServices(configuration);
 
     // Get configuration values
     var integratorUrl = configuration["IntegratorUrl"] ?? "https://api.example.com";

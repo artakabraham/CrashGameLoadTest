@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CrashGameLoadTest")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b5f292d612df30823690a96c1b8fe2b80f4daf25")]
 [assembly: System.Reflection.AssemblyProductAttribute("CrashGameLoadTest")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CrashGameLoadTest")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
