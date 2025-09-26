@@ -1,6 +1,6 @@
 namespace CrashGameLoadTest.Models
 {
-    public class LaunchResponse
+    public class LaunchResponseModel
     {
         public record LaunchResponse(string LaunchUrl);
     }

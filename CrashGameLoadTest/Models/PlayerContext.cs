@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace CrashGameLoadTest.Core
+namespace CrashGameLoadTest.Models
 {
     public class PlayerContext
     {

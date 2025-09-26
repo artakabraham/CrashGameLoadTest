@@ -1,6 +1,6 @@
 using CrashGameLoadTest.Models;
 
-namespace CrashGameLoadTest.Core
+namespace CrashGameLoadTest.Interfaces
 {
     public interface ICashoutStrategy
     {

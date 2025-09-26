@@ -1,6 +1,7 @@
-using CrashGameLoadTest.Core;
+using CrashGameLoadTest.Interfaces;
+using CrashGameLoadTest.Models;
 
-namespace CrashGameLoadTest.Strategies
+namespace CrashGameLoadTest.Strategies.BetStrategies
 {
     public class RandomBetStrategy : IBetDecisionStrategy
     {

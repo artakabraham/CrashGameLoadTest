@@ -1,6 +1,7 @@
-using CrashGameLoadTest.Core;
+using CrashGameLoadTest.Interfaces;
+using CrashGameLoadTest.Models;
 
-namespace CrashGameLoadTest.Strategies
+namespace CrashGameLoadTest.Strategies.CashoutStrategies
 {
     public class FixedCashoutStrategy(decimal targetMultiplier = 2.0m) : ICashoutStrategy
     {

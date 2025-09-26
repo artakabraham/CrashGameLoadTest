@@ -1,4 +1,6 @@
-namespace CrashGameLoadTest.Core
+using CrashGameLoadTest.Models;
+
+namespace CrashGameLoadTest.Interfaces
 {
     public interface IBetDecisionStrategy
     {
