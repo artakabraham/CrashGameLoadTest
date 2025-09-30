@@ -1,9 +1,7 @@
-using System.Text.Json;
-using System.Web;
 using CrashGameLoadTest.HttpClient;
 using CrashGameLoadTest.Interfaces;
 using CrashGameLoadTest.Models;
-using Microsoft.Extensions.Configuration;
+using System.Web;
 
 namespace CrashGameLoadTest.Services
 {

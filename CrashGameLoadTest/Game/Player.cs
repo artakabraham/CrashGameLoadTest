@@ -1,6 +1,10 @@
 using CrashGameLoadTest.Interfaces;
 using CrashGameLoadTest.Models;
+using CrashGameLoadTest.Models.EventModels;
+using LVC.CrashGamesCore.Domain.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CrashGameLoadTest.Game
 {
@@ -34,11 +38,11 @@ namespace CrashGameLoadTest.Game
 
                 await ConnectToHub();
 
-                // Main game loop
+                //Main game loop
                 while (!_cancellationToken.IsCancellationRequested)
                 {
-                    await PlayGameRound();
-                    await Task.Delay(1000, _cancellationToken);
+                    //await PlayGameRound();
+                    //await Task.Delay(1000, _cancellationToken);
                 }
             }
             catch (OperationCanceledException)
@@ -64,8 +68,124 @@ namespace CrashGameLoadTest.Game
                 .WithAutomaticReconnect()
                 .Build();
 
+            RegisterEventHandlers();
+
             await _context.SignalRConnection.StartAsync(_cancellationToken);
+
+
+            if (_context.SignalRConnection != null)
+            {
+                await _context.SignalRConnection.SendAsync("GetInitialData", _cancellationToken);
+                Console.WriteLine("GetInitialData");
+            }
+
+
             Console.WriteLine($"Player {_context.PlayerId} connected to SignalR hub");
+        }
+
+        private void RegisterEventHandlers()
+        {
+            _context.SignalRConnection.On<object>("OnConnected", OnConnected);
+            _context.SignalRConnection.On<object>("InitialDataResult", OnInitialDataResult);
+            //_context.SignalRConnection.On<object>("InitialDataResult", InitialDataResult);
+            //_context.SignalRConnection.On<object>("RoundResult", OnRoundResult);
+            _context.SignalRConnection.On<object>("ResultReport", OnResultReport);
+            _context.SignalRConnection.On<object>("EndRound", OnEndRound);
+            _context.SignalRConnection.On<object>("CreateRound", OnCreateRound);
+            _context.SignalRConnection.On<object>("BetsClosed", OnBetsClosed);
+            //_context.SignalRConnection.On<object>("DoBet", OnDoBet);
+            //_context.SignalRConnection.On<object>("DoBetResult", DoBetResult);
+            //_context.SignalRConnection.On<object>("UserBalance", UserBalance);            
+            // Add more events as needed
+        }
+
+        private void OnConnected(object data)
+        {
+            Console.WriteLine($"Player {_context.PlayerId} - Connected to hub");
+            Console.WriteLine("OnConnected", data);
+        }
+
+        private async Task OnInitialDataResult(object data)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                var jsonString = data is JsonElement element
+                ? element.GetRawText()
+                : data.ToString();
+
+                var initialData = JsonSerializer.Deserialize<InitialDataResult>(
+                    jsonString,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new JsonStringEnumConverter() }
+                    });
+                Console.WriteLine($"InitialDataResult -  {data}");
+            }
+        }
+
+        private async Task OnResultReport(object data)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                Console.WriteLine($"ResultReport - {data}");
+            }
+        }
+
+        private async Task OnEndRound(object data)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                Console.WriteLine($"EndRound - {data}");
+            }
+        }
+
+        private async Task OnCreateRound(object data)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                var jsonString = data is JsonElement element
+                ? element.GetRawText()
+                : data.ToString();
+
+                var initialData = JsonSerializer.Deserialize<CreateRound>(
+                    jsonString,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new JsonStringEnumConverter() }
+                    });
+
+                var doBetModel = new DoBetRequestModel
+                {
+                    RoundId = initialData.Id,
+                    BetSection = BetSectionEnum.BetSectionLeft,
+                    BetAmount = 10,
+                    Name = "Crashaxy"
+                };
+
+                await OnDoBet(doBetModel);
+
+                Console.WriteLine($"CreateRound - {data}");
+            }
+        }
+
+        private async Task OnBetsClosed(object data)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                Console.WriteLine($"BetsClosed - {data}");
+            }
+        }
+
+        private async Task OnDoBet(DoBetRequestModel doBetRequestModel)
+        {
+            if (_context.SignalRConnection != null)
+            {
+                await Task.Delay(1000, _cancellationToken);
+
+                await _context.SignalRConnection.SendAsync("DoBet", doBetRequestModel, _cancellationToken);
+            }
         }
 
         private async Task PlayGameRound()
@@ -122,7 +242,7 @@ namespace CrashGameLoadTest.Game
             {
                 await _context.SignalRConnection.DisposeAsync();
             }
-            
+
             _playerPoolService.ReleasePlayer(_poolPlayer.PlayerId);
             Console.WriteLine($"Player {_context.PlayerId} released back to pool");
         }

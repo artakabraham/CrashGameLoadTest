@@ -19,9 +19,7 @@ namespace CrashGameLoadTest.Strategies.BetStrategies
 
         public Task<bool> ShouldBetAsync(PlayerContext context, CancellationToken cancellationToken)
         {
-            var shouldBet = _random.NextDouble() < _betProbability &&
-                            context.Balance >= _minBet &&
-                            !context.IsInGame;
+            var shouldBet = _random.NextDouble() < _betProbability && context.Balance >= _minBet && !context.IsInGame;
             return Task.FromResult(shouldBet);
         }
 

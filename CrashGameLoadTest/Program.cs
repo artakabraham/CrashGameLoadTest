@@ -19,7 +19,7 @@ var app = builder.Build();
 
 try
 {
-    var playerCount = 1;
+    var playerCount = 10;
     var scenarioType = "basic";
     var duration = 5;
 
@@ -31,10 +31,8 @@ try
     var playerFactory = app.Services.GetRequiredService<IPlayerFactory>();
     var engine = new LoadTestEngine(scenarioBuilder, playerFactory);
 
-    // Create cancellation token for duration
     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(duration));
 
-    // Run the load test
     await engine.RunAsync(playerCount, scenarioType, cts.Token);
 
     Log.Information("Load test completed successfully");

@@ -10,7 +10,7 @@ namespace CrashGameLoadTest.Services
 
         public PlayerPoolService()
         {
-            _playerPool = InitializePlayerPool();
+            _playerPool = InitializePlayerPool(100);
         }
 
         public int AvailablePlayersCount => _playerPool.Count(p => !p.IsInUse);
@@ -43,47 +43,25 @@ namespace CrashGameLoadTest.Services
         }
 
 
-        private static List<PlayerPoolItem> InitializePlayerPool()
+        private static List<PlayerPoolItem> InitializePlayerPool(int playersCount)
         {
-            List<PlayerPoolItem> players =
-            [
-                new PlayerPoolItem
-                {
-                    PlayerId = "Shant0001",
-                    NickName = "Shant0001",
-                    B2BToken = "string",
-                    PlatformId = "1234566666",
-                    PartnerId = "01",
-                    Currency = "USD",
-                    Balance = 10000,
-                    IsDemo = false
-                },
+            List<PlayerPoolItem> players = [];
 
-                new PlayerPoolItem
-                {
-                    PlayerId = "Shant0002",
-                    NickName = "Shant0002",
-                    B2BToken = "string",
-                    PlatformId = "1234566666",
-                    PartnerId = "01",
-                    Currency = "USD",
-                    Balance = 10000,
-                    IsDemo = false
-                },
-
-                new PlayerPoolItem
-                {
-                    PlayerId = "Shant0003",
-                    NickName = "Shant0003",
-                    B2BToken = "string",
-                    PlatformId = "1234566666",
-                    PartnerId = "01",
-                    Currency = "USD",
-                    Balance = 10000,
-                    IsDemo = false
-                }
-            ];
-
+            for (int i = 2; i < playersCount; i++)
+            {
+                players.Add(
+                        new PlayerPoolItem
+                        {
+                            PlayerId = $"Shant000{i}",
+                            NickName = $"Shant000{i}",
+                            B2BToken = "string",
+                            PlatformId = "1234566666",
+                            PartnerId = "01",
+                            Currency = "USD",
+                            Balance = 10000,
+                            IsDemo = false
+                        });
+            }
             return players;
         }
     }
