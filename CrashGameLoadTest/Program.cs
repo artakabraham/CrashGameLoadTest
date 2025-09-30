@@ -1,8 +1,9 @@
 ﻿using CrashGameLoadTest.Engine;
 using CrashGameLoadTest.Extensions;
+using CrashGameLoadTest.Interfaces;
 using CrashGameLoadTest.Scenarios;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -10,30 +11,25 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("logs/loadtest-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.RegisterServices(builder.Configuration);
+
+var app = builder.Build();
+
 try
 {
-    var configuration = new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        .AddCommandLine(args)
-        .Build();
+    var playerCount = 1;
+    var scenarioType = "basic";
+    var duration = 5;
 
-    var services = new ServiceCollection();
-    services.AddSingleton<IConfiguration>(configuration);
-    services.RegisterServices(configuration);
+    Console.WriteLine($"Starting load test with {playerCount} players for {duration} minutes");
+    Console.WriteLine($"Scenario: {scenarioType}");
 
-    // Get configuration values
-    var integratorUrl = configuration["IntegratorUrl"] ?? "https://api.example.com";
-    var hubUrl = configuration["HubUrl"] ?? "https://hub.example.com/crash";
-    var username = configuration["Username"] ?? "testuser";
-    var password = configuration["Password"] ?? "testpass";
-    var playerCount = int.Parse(configuration["PlayerCount"] ?? "10");
-    var scenarioType = configuration["ScenarioType"] ?? "basic";
-    var duration = int.Parse(configuration["DurationMinutes"] ?? "5");
-
-    // Create scenario builder and engine
-    var scenarioBuilder = new ScenarioBuilder(integratorUrl, hubUrl, username, password);
-    var engine = new LoadTestEngine(scenarioBuilder);
+    // Create scenario builder
+    var scenarioBuilder = new ScenarioBuilder();
+    var playerFactory = app.Services.GetRequiredService<IPlayerFactory>();
+    var engine = new LoadTestEngine(scenarioBuilder, playerFactory);
 
     // Create cancellation token for duration
     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(duration));

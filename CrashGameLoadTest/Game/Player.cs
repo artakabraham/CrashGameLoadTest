@@ -1,3 +1,4 @@
+using CrashGameLoadTest.Interfaces;
 using CrashGameLoadTest.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -7,43 +8,64 @@ namespace CrashGameLoadTest.Game
     {
         private readonly Scenario _scenario;
         private readonly PlayerContext _context;
+        private readonly PlayerPoolItem _poolPlayer;
+        private readonly IPlayerPoolService _playerPoolService;
         private readonly CancellationToken _cancellationToken;
-        
-        public Player(Scenario scenario, PlayerContext context, CancellationToken cancellationToken)
+
+        public Player(
+            Scenario scenario,
+            PlayerContext context,
+            PlayerPoolItem poolPlayer,
+            IPlayerPoolService playerPoolService,
+            CancellationToken cancellationToken)
         {
             _scenario = scenario;
             _context = context;
+            _poolPlayer = poolPlayer;
+            _playerPoolService = playerPoolService;
             _cancellationToken = cancellationToken;
         }
-        
+
         public async Task RunAsync()
         {
             try
             {
-                // Execute initial actions (auth, connect)
-                foreach (var action in _scenario.Actions)
-                {
-                    await action.ExecuteAsync(_context, _cancellationToken);
-                }
+                Console.WriteLine($"Player {_context.PlayerId} starting");
 
-                // Set initial balance
-                _context.Balance = 1000m; // Starting balance
+                await ConnectToHub();
 
                 // Main game loop
                 while (!_cancellationToken.IsCancellationRequested)
                 {
                     await PlayGameRound();
-                    await Task.Delay(1000, _cancellationToken); // Wait between rounds
+                    await Task.Delay(1000, _cancellationToken);
                 }
             }
             catch (OperationCanceledException)
             {
-                // Expected when cancellation is requested
+                Console.WriteLine($"Player {_context.PlayerId} cancelled");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Player {_context.PlayerId} error: {ex.Message}");
             }
             finally
             {
-                //await CleanupAsync();
+                await CleanupAsync();
             }
+        }
+
+        private async Task ConnectToHub()
+        {
+            var hubUrl = $"wss://crashaxy.tst.rbtplay.net/hubs/lvccrashaxy?gameId=7&access_token={_context.JwtToken}";
+
+            _context.SignalRConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect()
+                .Build();
+
+            await _context.SignalRConnection.StartAsync(_cancellationToken);
+            Console.WriteLine($"Player {_context.PlayerId} connected to SignalR hub");
         }
 
         private async Task PlayGameRound()
@@ -71,10 +93,10 @@ namespace CrashGameLoadTest.Game
             _context.CurrentMultiplier = 1.0m;
             _context.LastActionTime = DateTime.UtcNow;
 
-            // Simulate bet placement via SignalR
             if (_context.SignalRConnection != null)
             {
                 await _context.SignalRConnection.SendAsync("PlaceBet", amount, _cancellationToken);
+                Console.WriteLine($"Player {_context.PlayerId} placed bet: {amount}");
             }
         }
 
@@ -87,20 +109,22 @@ namespace CrashGameLoadTest.Game
             _context.CurrentMultiplier = 1.0m;
             _context.LastActionTime = DateTime.UtcNow;
 
-            // Simulate cashout via SignalR
             if (_context.SignalRConnection != null)
             {
                 await _context.SignalRConnection.SendAsync("Cashout", _cancellationToken);
+                Console.WriteLine($"Player {_context.PlayerId} cashed out: {winnings}");
             }
         }
 
-        // private async Task CleanupAsync()
-        // {
-        //     if (_context.SignalRConnection != null)
-        //     {
-        //         await _context.SignalRConnection.DisposeAsync();
-        //     }
-        //     _context.HttpClient?.Dispose();
-        // }
+        private async Task CleanupAsync()
+        {
+            if (_context.SignalRConnection != null)
+            {
+                await _context.SignalRConnection.DisposeAsync();
+            }
+            
+            _playerPoolService.ReleasePlayer(_poolPlayer.PlayerId);
+            Console.WriteLine($"Player {_context.PlayerId} released back to pool");
+        }
     }
 }

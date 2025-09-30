@@ -366,7 +366,7 @@ FodyWeavers.xsd
 .idea
 .idea/*
 .idea/.idea.BlackJack_Game/.idea/workspace.xml
-bin/
-obj/
+bin
+obj
 src\LVCBet.*\obj
 *.cache
