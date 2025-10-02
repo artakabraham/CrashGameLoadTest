@@ -19,7 +19,7 @@ var app = builder.Build();
 
 try
 {
-    var playerCount = 10;
+    var playerCount = 5;
     var scenarioType = "basic";
     var duration = 5;
 

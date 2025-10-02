@@ -7,7 +7,8 @@ namespace CrashGameLoadTest.Models
     public class PlayerContext
     {
         public string PlayerId { get; set; } = string.Empty;
-        public IntegratorHttpClient HttpClient { get; set; }
+        public Guid UserId { get; set; }
+        public IntegratorHttpClient? HttpClient { get; set; }
         public HubConnection? SignalRConnection { get; set; }
         public string JwtToken { get; set; } = string.Empty;
         public double Balance { get; set; }
@@ -20,9 +21,8 @@ namespace CrashGameLoadTest.Models
         public long BetId { get; set; }
         public Guid RoundId { get; set; }
         public bool IsInGame { get; set; }
-
         public bool IsCashedOut { get; set; }
         public DateTime LastActionTime { get; set; }
-        public Dictionary<string, object> CustomData { get; } = new();
+        //public Dictionary<string, object> CustomData { get; set; } = [];
     }
 }

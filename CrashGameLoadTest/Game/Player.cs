@@ -3,6 +3,8 @@ using CrashGameLoadTest.Models;
 using CrashGameLoadTest.Models.EventModels;
 using LVC.CrashGamesCore.Domain.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
+using System;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -11,10 +13,11 @@ namespace CrashGameLoadTest.Game
     public class Player
     {
         private readonly Scenario _scenario;
-        private readonly PlayerContext _context;
+        private readonly PlayerContext _playerContext;
         private readonly PlayerPoolItem _poolPlayer;
         private readonly IPlayerPoolService _playerPoolService;
         private readonly CancellationToken _cancellationToken;
+        public static ConcurrentDictionary<Guid, BetData> PlayerGameState { get; set; } = [];
 
         public Player(
             Scenario scenario,
@@ -24,7 +27,7 @@ namespace CrashGameLoadTest.Game
             CancellationToken cancellationToken)
         {
             _scenario = scenario;
-            _context = context;
+            _playerContext = context;
             _poolPlayer = poolPlayer;
             _playerPoolService = playerPoolService;
             _cancellationToken = cancellationToken;
@@ -34,7 +37,7 @@ namespace CrashGameLoadTest.Game
         {
             try
             {
-                Console.WriteLine($"Player {_context.PlayerId} starting");
+                Console.WriteLine($"Player {_playerContext.PlayerId} starting");
 
                 await ConnectToHub();
 
@@ -46,11 +49,11 @@ namespace CrashGameLoadTest.Game
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine($"Player {_context.PlayerId} cancelled");
+                Console.WriteLine($"Player {_playerContext.PlayerId} cancelled");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Player {_context.PlayerId} error: {ex.Message}");
+                Console.WriteLine($"Player {_playerContext.PlayerId} error: {ex.Message}");
             }
             finally
             {
@@ -60,52 +63,47 @@ namespace CrashGameLoadTest.Game
 
         private async Task ConnectToHub()
         {
-            var hubUrl = $"wss://crashaxy.tst.rbtplay.net/hubs/lvccrashaxy?gameId=7&access_token={_context.JwtToken}";
+            var hubUrl = $"wss://crashaxy.tst.rbtplay.net/hubs/lvccrashaxy?gameId=7&access_token={_playerContext.JwtToken}";
 
-            _context.SignalRConnection = new HubConnectionBuilder()
+            _playerContext.SignalRConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
                 .WithAutomaticReconnect()
                 .Build();
 
             RegisterEventHandlers();
 
-            await _context.SignalRConnection.StartAsync(_cancellationToken);
+            await _playerContext.SignalRConnection.StartAsync(_cancellationToken);
 
-
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
-                await _context.SignalRConnection.SendAsync("GetInitialData", _cancellationToken);
-                Console.WriteLine("GetInitialData");
+                await _playerContext.SignalRConnection.SendAsync("GetInitialData", _cancellationToken);
             }
 
-
-            Console.WriteLine($"Player {_context.PlayerId} connected to SignalR hub");
+            Console.WriteLine($"Player {_playerContext.PlayerId} connected to SignalR hub");
         }
 
         private void RegisterEventHandlers()
         {
-            _context.SignalRConnection.On<object>("OnConnected", OnConnected);
-            _context.SignalRConnection.On<object>("InitialDataResult", OnInitialDataResult);
-            _context.SignalRConnection.On<object>("ResultReport", OnResultReport);
-            _context.SignalRConnection.On<object>("EndRound", OnEndRound);
-            _context.SignalRConnection.On<object>("CreateRound", OnCreateRound);
-            _context.SignalRConnection.On<object>("BetsClosed", OnBetsClosed);
-            _context.SignalRConnection.On<object>("DoBetResult", DoBetResult);
-            //_context.SignalRConnection.On<object>("UserBalance", UserBalance);
-            //_context.SignalRConnection.On<object>("InitialDataResult", InitialDataResult);
-            //_context.SignalRConnection.On<object>("RoundResult", OnRoundResult);
+            _playerContext?.SignalRConnection?.On<object>("OnConnected", OnConnected);
+            _playerContext?.SignalRConnection?.On<object>("InitialDataResult", OnInitialDataResult);
+            _playerContext?.SignalRConnection?.On<object>("ResultReport", OnResultReport);
+            _playerContext?.SignalRConnection?.On<object>("EndRound", OnEndRound);
+            _playerContext?.SignalRConnection?.On<object>("CreateRound", OnCreateRound);
+            _playerContext?.SignalRConnection?.On<object>("BetsClosed", OnBetsClosed);
+            _playerContext?.SignalRConnection?.On<object>("DoBetResult", PlacedBetResult);
+            //_playerContext.SignalRConnection.On<object>("UserBalance", UserBalance);
+            //_playerContext.SignalRConnection.On<object>("RoundResult", OnRoundResult);
         }
 
         private void OnConnected(object data)
         {
-            _context.IsInGame = true;
-            Console.WriteLine($"Player {_context.PlayerId} - Connected to hub");
+            Console.WriteLine($"Player {_playerContext.PlayerId} - Connected to hub");
             Console.WriteLine("OnConnected", data);
         }
 
         private async Task OnInitialDataResult(object data)
         {
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
                 var jsonString = data is JsonElement element
                 ? element.GetRawText()
@@ -119,19 +117,21 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                _context.Balance = initialData.User.Balance;
-                _context.MinBet = initialData.Game.MinBet;
-                _context.MaxBet = initialData.Game.MaxBet;
-                _context.MaxWin = initialData.Game.MaxWin;
-                _context.CurrentStatus = initialData.Round.CurrentStatus;
+                PlayerGameState.TryAdd(initialData.User.UserId, new BetData { });
 
-                Console.WriteLine($"InitialDataResult -  {data}");
+                _playerContext.UserId = initialData.User.UserId;
+                _playerContext.Balance = initialData.User.Balance;
+                _playerContext.MinBet = initialData.Game.MinBet;
+                _playerContext.MaxBet = initialData.Game.MaxBet;
+                _playerContext.MaxWin = initialData.Game.MaxWin;
+                _playerContext.CurrentStatus = initialData.Round.CurrentStatus;
+                Console.WriteLine($"InitialDataResult -  {initialData.User.UserId}");
             }
         }
 
         private async Task OnResultReport(object data)
         {
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
                 var jsonString = data is JsonElement element
                 ? element.GetRawText()
@@ -145,26 +145,18 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                _context.CurrentMultiplier = resultReportData.Odd;
+                _playerContext.CurrentMultiplier = resultReportData.Odd;
 
-                await Cashout(_context.RoundId);
+                // TODO Check Game State before calling Cashout
+                await Cashout(_playerContext.RoundId);
 
                 Console.WriteLine($"ResultReport - {data}");
             }
         }
 
-        private async Task OnEndRound(object data)
-        {
-            if (_context.SignalRConnection != null)
-            {
-                Console.WriteLine($"EndRound - {data}");
-                _context.IsCashedOut = false;
-            }
-        }
-
         private async Task OnCreateRound(object data)
         {
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
                 var jsonString = data is JsonElement element
                 ? element.GetRawText()
@@ -178,7 +170,7 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                _context.RoundId = createRoundData.Id;
+                _playerContext.RoundId = createRoundData.Id;
 
                 await PlayGameRound(createRoundData.Id);
 
@@ -186,29 +178,11 @@ namespace CrashGameLoadTest.Game
             }
         }
 
-        private async Task OnBetsClosed(object data)
-        {
-            if (_context.SignalRConnection != null)
-            {
-                Console.WriteLine($"BetsClosed - {data}");
-            }
-        }
-
-        private async Task DoBet(BetRequestModel doBetRequestModel)
-        {
-            if (_context.SignalRConnection != null)
-            {
-                await Task.Delay(1000, _cancellationToken);
-
-                await _context.SignalRConnection.SendAsync("DoBet", doBetRequestModel, _cancellationToken);
-            }
-        }
-
         private async Task PlayGameRound(Guid roundId)
         {
-            if (_scenario.BetStrategy != null && await _scenario.BetStrategy.ShouldBetAsync(_context, _cancellationToken))
+            if (_scenario.BetStrategy != null && await _scenario.BetStrategy.ShouldBetAsync(_playerContext, _cancellationToken))
             {
-                var betAmount = await _scenario.BetStrategy.GetBetAmountAsync(_context, _cancellationToken);
+                var betAmount = await _scenario.BetStrategy.GetBetAmountAsync(_playerContext, _cancellationToken);
 
                 var doBetModel = new BetRequestModel
                 {
@@ -218,50 +192,35 @@ namespace CrashGameLoadTest.Game
                     Name = "Crashaxy"
                 };
 
-                await DoBet(doBetModel);
+                await PlaceBet(doBetModel);
             }
         }
 
-        private async Task Cashout(Guid roundId)
+        private async Task PlaceBet(BetRequestModel doBetRequestModel)
         {
-            if (roundId == Guid.Empty || _context.IsCashedOut)
+            if (_playerContext.SignalRConnection != null)
             {
-                return;
-            }
+                var random = new Random();
+                var delay = (random.Next(5) * 1000); // Random delay between 1 and 5 seconds
 
-            Console.WriteLine($"_context.IsInGame {_context.IsInGame}, _scenario.CashoutStrategy{_scenario.CashoutStrategy != null}");
+                Console.WriteLine($"Delay - {delay}");
 
-            if (_context.IsInGame && _scenario.CashoutStrategy != null)
-            {
-                if (await _scenario.CashoutStrategy.ShouldCashoutAsync(_context, _cancellationToken))
-                {
-                    var cashOutRequest = new CashoutRequestModel
-                    {
-                        Odd = _context.CurrentMultiplier,
-                        RoundId = roundId,
-                        BetSection = BetSectionEnum.BetSectionLeft,
-                        IsHalfCashout = false,
-                        BetId = _context.BetId,
-                        CashoutTime = DateTime.UtcNow
-                    };
+                await Task.Delay(delay, _cancellationToken);
 
-                    if (_context.SignalRConnection != null)
-                    {
-                        await _context.SignalRConnection.SendAsync("DoCashout", cashOutRequest, _cancellationToken);
-                        Console.WriteLine($"Player {_context.PlayerId} cashed out, BetId = {cashOutRequest.BetId}");
-                        _context.IsCashedOut = true;
-                    }
-                }
+                await _playerContext.SignalRConnection.SendAsync("DoBet", doBetRequestModel, _cancellationToken);
+
+
             }
         }
 
-        private async Task DoBetResult(object data)
+
+        private async Task PlacedBetResult(object data)
         {
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
                 var jsonString = data is JsonElement element
-                ? element.GetRawText()
-                : data.ToString();
+                    ? element.GetRawText()
+                    : data.ToString();
                 var doBetResultData = JsonSerializer.Deserialize<BetResultModel>(
                     jsonString,
                     new JsonSerializerOptions
@@ -270,22 +229,77 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                _context.BetId = doBetResultData.BetId;
+                PlayerGameState[doBetResultData.UserId].BetId = doBetResultData.BetId;
 
-                Console.WriteLine($"DoBetResult - {data}");
+                _playerContext.BetId = doBetResultData.BetId;
+                _playerContext.IsInGame = true;
+            }
+        }
+
+        private async Task OnBetsClosed(object data)
+        {
+            if (_playerContext.SignalRConnection != null)
+            {
+                Console.WriteLine($"BetsClosed - {data}");
+            }
+        }
+
+        private async Task Cashout(Guid roundId)
+        {
+            if (roundId == Guid.Empty)
+            {
+                return;
+            }
+
+            if (_playerContext.IsInGame && _scenario.CashoutStrategy != null)
+            {
+                if (await _scenario.CashoutStrategy.ShouldCashoutAsync(_playerContext, _cancellationToken))
+                {
+                    var cashOutRequest = new CashoutRequestModel
+                    {
+                        Odd = _playerContext.CurrentMultiplier,
+                        RoundId = roundId,
+                        BetSection = BetSectionEnum.BetSectionLeft,
+                        IsHalfCashout = false,
+                        BetId = PlayerGameState[_playerContext.UserId].BetId,
+                        CashoutTime = DateTime.UtcNow
+                    };
+
+                    if (_playerContext.SignalRConnection != null)
+                    {
+                        await _playerContext.SignalRConnection.SendAsync("DoCashout", cashOutRequest, _cancellationToken);
+                        Console.WriteLine($"Player {_playerContext.PlayerId} cashed out, BetId = {cashOutRequest.BetId}");
+                    }
+                }
+            }
+        }
+        private async Task OnEndRound(object data)
+        {
+            if (_playerContext.SignalRConnection != null)
+            {
+                Console.WriteLine($"EndRound - {data}");
+                //CustomData.TryRemove(_playerContext.PlayerId, out _);
+                _playerContext.IsInGame = false;
+                _playerContext.BetId = 0;
             }
         }
 
         private async Task CleanupAsync()
         {
-            if (_context.SignalRConnection != null)
+            if (_playerContext.SignalRConnection != null)
             {
-                await _context.SignalRConnection.DisposeAsync();
+                await _playerContext.SignalRConnection.DisposeAsync();
             }
 
             _playerPoolService.ReleasePlayer(_poolPlayer.PlayerId);
-            _context.IsInGame = false;
-            Console.WriteLine($"Player {_context.PlayerId} released back to pool");
+            _playerContext.IsInGame = false;
+            Console.WriteLine($"Player {_playerContext.PlayerId} released back to pool");
         }
+    }
+
+    public class BetData
+    {
+        public Guid UserId { get; set; }
+        public long BetId { get; set; }
     }
 }

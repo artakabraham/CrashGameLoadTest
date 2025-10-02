@@ -5,6 +5,7 @@ namespace CrashGameLoadTest.Models.EventModels
     public class BetResultModel
     {
         public Guid RoundId { get; set; }
+        public Guid UserId { get; set; }
         public decimal Amount { get; set; }
         public decimal Coin { get; set; }
         public BetStatusEnum BetStatus { get; set; }

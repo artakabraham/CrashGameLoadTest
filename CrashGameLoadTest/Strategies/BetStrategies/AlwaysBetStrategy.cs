@@ -14,7 +14,7 @@ namespace CrashGameLoadTest.Strategies.BetStrategies
 
         public Task<bool> ShouldBetAsync(PlayerContext context, CancellationToken cancellationToken)
         {
-            return Task.FromResult(context.Balance >= _betAmount && context.IsInGame);
+            return Task.FromResult(context.Balance >= _betAmount && !context.IsInGame);
         }
 
         public Task<double> GetBetAmountAsync(PlayerContext context, CancellationToken cancellationToken)
