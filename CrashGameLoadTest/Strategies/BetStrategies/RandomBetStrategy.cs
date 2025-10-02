@@ -6,11 +6,11 @@ namespace CrashGameLoadTest.Strategies.BetStrategies
     public class RandomBetStrategy : IBetDecisionStrategy
     {
         private readonly Random _random = new();
-        private readonly decimal _minBet;
-        private readonly decimal _maxBet;
+        private readonly double _minBet;
+        private readonly double _maxBet;
         private readonly double _betProbability;
 
-        public RandomBetStrategy(decimal minBet = 5m, decimal maxBet = 50m, double betProbability = 0.7)
+        public RandomBetStrategy(double minBet = 5, double maxBet = 50, double betProbability = 0.7)
         {
             _minBet = minBet;
             _maxBet = maxBet;
@@ -23,9 +23,9 @@ namespace CrashGameLoadTest.Strategies.BetStrategies
             return Task.FromResult(shouldBet);
         }
 
-        public Task<decimal> GetBetAmountAsync(PlayerContext context, CancellationToken cancellationToken)
+        public Task<double> GetBetAmountAsync(PlayerContext context, CancellationToken cancellationToken)
         {
-            var betAmount = (decimal)(_random.NextDouble() * (double)(_maxBet - _minBet)) + _minBet;
+            var betAmount = (_random.NextDouble() * (_maxBet - _minBet)) + _minBet;
             return Task.FromResult(Math.Min(betAmount, context.Balance));
         }
     }

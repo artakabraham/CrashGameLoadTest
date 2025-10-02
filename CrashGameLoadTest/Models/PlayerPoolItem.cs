@@ -8,7 +8,7 @@ namespace CrashGameLoadTest.Models
         public string PlatformId { get; set; } = string.Empty;
         public string PartnerId { get; set; } = string.Empty;
         public string Currency { get; set; } = string.Empty;
-        public decimal Balance { get; set; }
+        public double Balance { get; set; }
         public bool IsDemo { get; set; }
         public bool IsInUse { get; set; } = false;
     }

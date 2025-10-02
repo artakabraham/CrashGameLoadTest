@@ -10,7 +10,7 @@ namespace CrashGameLoadTest.Models
         public string? GameVersion { get; set; }
         public string GameId { get; set; }
         public string Language { get; set; }
-        public decimal Balance { get; set; }
+        public double Balance { get; set; }
         public string NickName { get; set; }
         public bool IsDemo { get; set; }
     }

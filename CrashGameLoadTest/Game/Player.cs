@@ -38,7 +38,6 @@ namespace CrashGameLoadTest.Game
 
                 await ConnectToHub();
 
-                //Main game loop
                 while (!_cancellationToken.IsCancellationRequested)
                 {
                     //await PlayGameRound();
@@ -87,20 +86,19 @@ namespace CrashGameLoadTest.Game
         {
             _context.SignalRConnection.On<object>("OnConnected", OnConnected);
             _context.SignalRConnection.On<object>("InitialDataResult", OnInitialDataResult);
-            //_context.SignalRConnection.On<object>("InitialDataResult", InitialDataResult);
-            //_context.SignalRConnection.On<object>("RoundResult", OnRoundResult);
             _context.SignalRConnection.On<object>("ResultReport", OnResultReport);
             _context.SignalRConnection.On<object>("EndRound", OnEndRound);
             _context.SignalRConnection.On<object>("CreateRound", OnCreateRound);
             _context.SignalRConnection.On<object>("BetsClosed", OnBetsClosed);
-            //_context.SignalRConnection.On<object>("DoBet", OnDoBet);
-            //_context.SignalRConnection.On<object>("DoBetResult", DoBetResult);
-            //_context.SignalRConnection.On<object>("UserBalance", UserBalance);            
-            // Add more events as needed
+            _context.SignalRConnection.On<object>("DoBetResult", DoBetResult);
+            //_context.SignalRConnection.On<object>("UserBalance", UserBalance);
+            //_context.SignalRConnection.On<object>("InitialDataResult", InitialDataResult);
+            //_context.SignalRConnection.On<object>("RoundResult", OnRoundResult);
         }
 
         private void OnConnected(object data)
         {
+            _context.IsInGame = true;
             Console.WriteLine($"Player {_context.PlayerId} - Connected to hub");
             Console.WriteLine("OnConnected", data);
         }
@@ -120,6 +118,13 @@ namespace CrashGameLoadTest.Game
                         PropertyNameCaseInsensitive = true,
                         Converters = { new JsonStringEnumConverter() }
                     });
+
+                _context.Balance = initialData.User.Balance;
+                _context.MinBet = initialData.Game.MinBet;
+                _context.MaxBet = initialData.Game.MaxBet;
+                _context.MaxWin = initialData.Game.MaxWin;
+                _context.CurrentStatus = initialData.Round.CurrentStatus;
+
                 Console.WriteLine($"InitialDataResult -  {data}");
             }
         }
@@ -128,6 +133,22 @@ namespace CrashGameLoadTest.Game
         {
             if (_context.SignalRConnection != null)
             {
+                var jsonString = data is JsonElement element
+                ? element.GetRawText()
+                : data.ToString();
+
+                var resultReportData = JsonSerializer.Deserialize<ResultReportModel>(
+                    jsonString,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new JsonStringEnumConverter() }
+                    });
+
+                _context.CurrentMultiplier = resultReportData.Odd;
+
+                await Cashout(_context.RoundId);
+
                 Console.WriteLine($"ResultReport - {data}");
             }
         }
@@ -137,6 +158,7 @@ namespace CrashGameLoadTest.Game
             if (_context.SignalRConnection != null)
             {
                 Console.WriteLine($"EndRound - {data}");
+                _context.IsCashedOut = false;
             }
         }
 
@@ -148,7 +170,7 @@ namespace CrashGameLoadTest.Game
                 ? element.GetRawText()
                 : data.ToString();
 
-                var initialData = JsonSerializer.Deserialize<CreateRound>(
+                var createRoundData = JsonSerializer.Deserialize<CreateRound>(
                     jsonString,
                     new JsonSerializerOptions
                     {
@@ -156,17 +178,11 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                var doBetModel = new DoBetRequestModel
-                {
-                    RoundId = initialData.Id,
-                    BetSection = BetSectionEnum.BetSectionLeft,
-                    BetAmount = 10,
-                    Name = "Crashaxy"
-                };
+                _context.RoundId = createRoundData.Id;
 
-                await OnDoBet(doBetModel);
+                await PlayGameRound(createRoundData.Id);
 
-                Console.WriteLine($"CreateRound - {data}");
+                Console.WriteLine($"CreateRound - {createRoundData.Id}");
             }
         }
 
@@ -178,7 +194,7 @@ namespace CrashGameLoadTest.Game
             }
         }
 
-        private async Task OnDoBet(DoBetRequestModel doBetRequestModel)
+        private async Task DoBet(BetRequestModel doBetRequestModel)
         {
             if (_context.SignalRConnection != null)
             {
@@ -188,51 +204,75 @@ namespace CrashGameLoadTest.Game
             }
         }
 
-        private async Task PlayGameRound()
+        private async Task PlayGameRound(Guid roundId)
         {
             if (_scenario.BetStrategy != null && await _scenario.BetStrategy.ShouldBetAsync(_context, _cancellationToken))
             {
                 var betAmount = await _scenario.BetStrategy.GetBetAmountAsync(_context, _cancellationToken);
-                await PlaceBet(betAmount);
+
+                var doBetModel = new BetRequestModel
+                {
+                    RoundId = roundId,
+                    BetSection = BetSectionEnum.BetSectionLeft,
+                    BetAmount = betAmount,
+                    Name = "Crashaxy"
+                };
+
+                await DoBet(doBetModel);
             }
+        }
+
+        private async Task Cashout(Guid roundId)
+        {
+            if (roundId == Guid.Empty || _context.IsCashedOut)
+            {
+                return;
+            }
+
+            Console.WriteLine($"_context.IsInGame {_context.IsInGame}, _scenario.CashoutStrategy{_scenario.CashoutStrategy != null}");
 
             if (_context.IsInGame && _scenario.CashoutStrategy != null)
             {
-                if (await _scenario.CashoutStrategy.ShouldCashoutAsync(_context, _context.CurrentMultiplier, _cancellationToken))
+                if (await _scenario.CashoutStrategy.ShouldCashoutAsync(_context, _cancellationToken))
                 {
-                    await Cashout();
+                    var cashOutRequest = new CashoutRequestModel
+                    {
+                        Odd = _context.CurrentMultiplier,
+                        RoundId = roundId,
+                        BetSection = BetSectionEnum.BetSectionLeft,
+                        IsHalfCashout = false,
+                        BetId = _context.BetId,
+                        CashoutTime = DateTime.UtcNow
+                    };
+
+                    if (_context.SignalRConnection != null)
+                    {
+                        await _context.SignalRConnection.SendAsync("DoCashout", cashOutRequest, _cancellationToken);
+                        Console.WriteLine($"Player {_context.PlayerId} cashed out, BetId = {cashOutRequest.BetId}");
+                        _context.IsCashedOut = true;
+                    }
                 }
             }
         }
 
-        private async Task PlaceBet(decimal amount)
+        private async Task DoBetResult(object data)
         {
-            _context.CurrentBet = amount;
-            _context.Balance -= amount;
-            _context.IsInGame = true;
-            _context.CurrentMultiplier = 1.0m;
-            _context.LastActionTime = DateTime.UtcNow;
-
             if (_context.SignalRConnection != null)
             {
-                await _context.SignalRConnection.SendAsync("PlaceBet", amount, _cancellationToken);
-                Console.WriteLine($"Player {_context.PlayerId} placed bet: {amount}");
-            }
-        }
+                var jsonString = data is JsonElement element
+                ? element.GetRawText()
+                : data.ToString();
+                var doBetResultData = JsonSerializer.Deserialize<BetResultModel>(
+                    jsonString,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new JsonStringEnumConverter() }
+                    });
 
-        private async Task Cashout()
-        {
-            var winnings = _context.CurrentBet * _context.CurrentMultiplier;
-            _context.Balance += winnings;
-            _context.IsInGame = false;
-            _context.CurrentBet = 0;
-            _context.CurrentMultiplier = 1.0m;
-            _context.LastActionTime = DateTime.UtcNow;
+                _context.BetId = doBetResultData.BetId;
 
-            if (_context.SignalRConnection != null)
-            {
-                await _context.SignalRConnection.SendAsync("Cashout", _cancellationToken);
-                Console.WriteLine($"Player {_context.PlayerId} cashed out: {winnings}");
+                Console.WriteLine($"DoBetResult - {data}");
             }
         }
 
@@ -244,6 +284,7 @@ namespace CrashGameLoadTest.Game
             }
 
             _playerPoolService.ReleasePlayer(_poolPlayer.PlayerId);
+            _context.IsInGame = false;
             Console.WriteLine($"Player {_context.PlayerId} released back to pool");
         }
     }

@@ -1,9 +1,8 @@
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Web;
 using CrashGameLoadTest.Interfaces;
 using CrashGameLoadTest.Models;
 using LVC.SharedModels.Response;
+using System.Text.Json;
+using System.Web;
 
 namespace CrashGameLoadTest.Actions
 {
@@ -28,16 +27,17 @@ namespace CrashGameLoadTest.Actions
                     jsonStringData: jsonStringData,
                     relativeUri: _integratorUrl,
                     httpMethod: HttpMethod.Post,
-                    enableCompression: true);
-                
+                    enableCompression: true,
+                    cancellationToken: token);
+
                 if (string.IsNullOrEmpty(responseJson))
                 {
                     throw new Exception("Failed to execute the HTTP request.");
                 }
-                
+
                 var response = JsonSerializer.Deserialize<ResultResponse<LaunchGameResponseModel>>(responseJson);
                 context.JwtToken = ExtractJwt(response.Data.RealUri);
-                
+
             }
             catch (Exception e)
             {
@@ -45,7 +45,7 @@ namespace CrashGameLoadTest.Actions
                 throw;
             }
 
-            
+
         }
 
         private static string ExtractJwt(string url)
