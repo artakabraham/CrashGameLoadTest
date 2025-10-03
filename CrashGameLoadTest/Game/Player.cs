@@ -3,7 +3,6 @@ using CrashGameLoadTest.Models;
 using CrashGameLoadTest.Models.EventModels;
 using LVC.CrashGamesCore.Domain.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
-using System;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -117,7 +116,7 @@ namespace CrashGameLoadTest.Game
                         Converters = { new JsonStringEnumConverter() }
                     });
 
-                PlayerGameState.TryAdd(initialData.User.UserId, new BetData { });
+                PlayerGameState.TryAdd(initialData.User.UserId, new BetData { UserId = initialData.User.UserId });
 
                 _playerContext.UserId = initialData.User.UserId;
                 _playerContext.Balance = initialData.User.Balance;
@@ -201,15 +200,13 @@ namespace CrashGameLoadTest.Game
             if (_playerContext.SignalRConnection != null)
             {
                 var random = new Random();
-                var delay = (random.Next(5) * 1000); // Random delay between 1 and 5 seconds
+                var delay = (random.Next(3) * 1000); // Random delay between 1 and 5 seconds
 
                 Console.WriteLine($"Delay - {delay}");
 
                 await Task.Delay(delay, _cancellationToken);
 
                 await _playerContext.SignalRConnection.SendAsync("DoBet", doBetRequestModel, _cancellationToken);
-
-
             }
         }
 

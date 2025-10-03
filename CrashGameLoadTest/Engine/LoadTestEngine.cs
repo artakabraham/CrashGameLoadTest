@@ -29,10 +29,20 @@ namespace CrashGameLoadTest.Engine
 
             Console.WriteLine($"Creating {playerCount} players with {scenario.Name} scenario...");
 
-            for (var i = 0; i < playerCount; i++)
+            var playersPerBatch = 2;
+            var intervalPerBatchInSeconds = 60;
+
+            var batchCount = (int)Math.Ceiling((double)playerCount / playersPerBatch);
+
+            for (int batch = 0; batch < batchCount; batch++)
             {
-                var playerTask = CreateAndRunPlayer(scenario, token);
-                tasks.Add(playerTask);
+                for (var k = 0; k < playersPerBatch; k++)
+                {
+                    var playerTask = CreateAndRunPlayer(scenario, token);
+                    tasks.Add(playerTask);
+                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                }
+                await Task.Delay(TimeSpan.FromSeconds(60), token);
             }
 
             Console.WriteLine($"Started {playerCount} players with unique credentials");

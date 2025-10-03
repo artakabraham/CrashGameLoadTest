@@ -6,11 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/loadtest-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
-
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.RegisterServices(builder.Configuration);
@@ -19,9 +14,9 @@ var app = builder.Build();
 
 try
 {
-    var playerCount = 5;
+    var playerCount = 10;
     var scenarioType = "basic";
-    var duration = 5;
+    var duration = 10;
 
     Console.WriteLine($"Starting load test with {playerCount} players for {duration} minutes");
     Console.WriteLine($"Scenario: {scenarioType}");
